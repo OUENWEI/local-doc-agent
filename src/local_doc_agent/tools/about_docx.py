@@ -20,7 +20,7 @@ def docx_read(filename:str) -> str:
         logger.info(f"The {filename} file doesn't exist, please check the file path. ")
         return  "error:File not found"
     if  not filename.endswith(".docx"):
-        logger.error(f"The {filename} file isn't set up as a docx, the AI seems to have called the wrong tool, please contact the developer.")
+        logger.info(f"The {filename} file isn't set up as a docx, the AI seems to have called the wrong tool, please contact the developer.")
         return "error:The file isn't in the specified .docx format"
 
     try: #Handling damaged documents
@@ -55,5 +55,5 @@ def docx_read(filename:str) -> str:
         return content
 
     except Exception as e :
-        logger.error(f"The {filename} document is corrupted, please check the file.{e} ")
+        logger.info(f"The {filename} document is corrupted, please check the file.{e} ")
         return f"error:The docx document is corrupted,{str(e)}"

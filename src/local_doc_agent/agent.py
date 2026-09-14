@@ -2,8 +2,9 @@ import logging
 from langchain.chat_models import init_chat_model
 from local_doc_agent.logger import logger
 from langchain.agents import create_agent
-from local_doc_agent.config import MODEL_CONFIGS, DEFAULT_MODEL_ALIAS
-from local_doc_agent.tools.about_dock import docx_read
+from local_doc_agent.config import MODEL_CONFIGS
+from local_doc_agent.tools.about_docx import docx_read
+from local_doc_agent.tools.about_excel import excel_read
 
 def creat_agent(model_name : str) :
     if model_name not in MODEL_CONFIGS:
@@ -21,7 +22,7 @@ def creat_agent(model_name : str) :
 
         )
 
-        tools = [docx_read]
+        tools = [docx_read,excel_read]
 
         system_prompt = " " #暂时没写，等待书写，已做高亮标记
         agent = create_agent(
