@@ -1,24 +1,35 @@
-from local_doc_agent.agent import creat_agent
+import asyncio
+import sys
+from local_doc_agent.agent import creat_agent, close_checkpointer
 from local_doc_agent.config import MODEL_CONFIGS
 
 
 def choose_model() -> str:
     available = ", ".join(MODEL_CONFIGS.keys())
     while True:
-        model_name = input(f"Choose a model [{available}]: ").strip()
+        print(f"Choose a model [{available}]: ", end="", flush=True)
+        model_name = sys.stdin.readline().strip()
         if model_name in MODEL_CONFIGS:
             return model_name
         print(f"Unknown model. Available: {available}")
 
 
 def choose_user() -> str:
-    user_id = input("Enter your user id (default: default_user): ").strip()
+    print("Enter your user id (default: default_user): ", end="", flush=True)
+    user_id = sys.stdin.readline().strip()
     return user_id or "default_user"
 
 
-def main():
+async def async_input(prompt: str) -> str:
+    """在异步环境里安全读取一行输入，兼容 Windows 中文输入法。"""
+    print(prompt, end="", flush=True)
+    line = await asyncio.to_thread(sys.stdin.readline)
+    return line.rstrip("\n")
+
+
+async def main():
     model_name = choose_model()
-    agent = creat_agent(model_name)
+    agent = await creat_agent(model_name)
     if isinstance(agent, str):
         print(f"[FATAL] {agent}")
         return
@@ -30,22 +41,28 @@ def main():
     print(f"Memory space: {user_id}")
     print("Type 'quit' to exit.\n")
 
-    while True:
-        try:
-            user_input = input("You: ")
-        except (KeyboardInterrupt, EOFError):
-            print("\nBye.")
-            break
+    try:
+        while True:
+            try:
+                user_input = await async_input("You: ")
+            except (KeyboardInterrupt, EOFError):
+                print("\nBye.")
+                break
 
-        if user_input.lower() == "quit":
-            break
+            if not user_input:
+                continue
 
-        result = agent.invoke(
-            {"messages": [{"role": "user", "content": user_input}]},
-            config,
-        )
-        print(f"Assistant: {result['messages'][-1].content}\n")
+            if user_input.lower() == "quit":
+                break
+
+            result = await agent.ainvoke(
+                {"messages": [{"role": "user", "content": user_input}]},
+                config,
+            )
+            print(f"Assistant: {result['messages'][-1].content}\n")
+    finally:
+        await close_checkpointer()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
