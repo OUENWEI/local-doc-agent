@@ -1,59 +1,47 @@
+import sqlite3
+from langgraph.checkpoint.sqlite import SqliteSaver
 from langchain.chat_models import init_chat_model
-from local_doc_agent.logger import logger
 from langchain.agents import create_agent
+
+from local_doc_agent.logger import logger
 from local_doc_agent.config import MODEL_CONFIGS
 from local_doc_agent.tools.about_docx import docx_read
 from local_doc_agent.tools.about_excel import excel_read
 
 
-
-
-def creat_agent(model_name : str) :
+def creat_agent(model_name: str):
     if model_name not in MODEL_CONFIGS:
         logger.info(f"Can't find the {model_name} model")
         return "error : do not found model"
-    # Return a string instead of raising, so the caller can decide
-    # whether to terminate the process (agreed error-handling convention).
-    else:
-        cfg = MODEL_CONFIGS[model_name]
-        model = init_chat_model(
-            cfg["model"],
-            model_provider="openai",
-            base_url = cfg["base_url"],
-            api_key = cfg["api_key_env"],
 
-        )
+    cfg = MODEL_CONFIGS[model_name]
 
-        tools = [docx_read,excel_read]
+    model = init_chat_model(
+        cfg["model"],
+        model_provider="openai",
+        base_url=cfg["base_url"],
+        api_key=cfg["api_key_env"],
+    )
 
-        system_prompt =  """You are a local document assistant. You have access to two tools:
-- docx_read: reads Word documents (.docx)
-- excel_read: reads Excel spreadsheets (.xlsx)
+    tools = [docx_read, excel_read]
 
-Important rules when handling tool results:
-1. If a tool returns a string starting with 'error:', it means the tool failed.
-   You must:
-   a) Try another tool that might be suitable.
-   b) If no tool can handle the task, explain the situation to the user clearly.
-2. If a tool returns a string starting with 'warning:', the content is truncated.
-   You must inform the user about the limitation.
+    # 短期记忆：SQLite 持久化到硬盘
+    conn = sqlite3.connect(
+        "short_memory.db",
+        check_same_thread=False,
+        isolation_level=None,   # 关键：自动提交模式，避免事务冲突
+    )
+    checkpointer = SqliteSaver(conn)
 
-Always respond in the user's language.
+    system_prompt = """你是一个本地文档助手，可以读取本地Excel和Word文件并回答问题。请用中文回答。
+当用户提供个人信息（名字、喜好等）时，请在回复中自然地提及或确认，不要忽略。
+请始终用与用户输入相同的语言进行回复。
 """
-        agent = create_agent(
-            model = model,
-            tools = tools,
-            system_prompt = system_prompt,
-        )
 
-        return agent
-
-
-
-
-
-
-
-
-
-
+    agent = create_agent(
+        model=model,
+        tools=tools,
+        system_prompt=system_prompt,
+        checkpointer=checkpointer,
+    )
+    return agent
