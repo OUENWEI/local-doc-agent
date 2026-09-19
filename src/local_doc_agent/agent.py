@@ -7,9 +7,9 @@ from local_doc_agent.logger import logger
 from local_doc_agent.config import MODEL_CONFIGS
 from local_doc_agent.tools.about_docx import docx_read
 from local_doc_agent.tools.about_excel import excel_read
+import asyncio
 
 
-# 全局持有 checkpointer 的上下文管理器和实例，防止连接被提前关闭
 _checkpointer_context = None
 _checkpointer = None
 
@@ -49,24 +49,41 @@ async def creat_agent(model_name: str):
         api_key=cfg["api_key_env"],
     )
 
-    # 连接 BlenderMCP
-    client = MultiServerMCPClient({
-        "blender": {
+    news_client = MultiServerMCPClient({
+        "reach-mcp": {
             "command": "uvx",
-            "args": ["blender-mcp"],
+            "args": ["reach-mcp", "--transport", "stdio"],
             "transport": "stdio",
-        }
-    })
-    blender_tools = await client.get_tools()
-    logger.info(f"成功加载 {len(blender_tools)} 个 Blender 工具")
+        },
 
-    all_tools = [docx_read, excel_read] + blender_tools
+    })
+    news_tools =  await news_client.get_tools()
+
+    all_tools = [docx_read, excel_read] + news_tools
+    result =  await asyncio.to_thread(input, "是否导入 Blender 工具（按Y键导入）: ")
+    if result in "Yy":
+        blender_client = MultiServerMCPClient({
+            "blender": {
+                "command": "uvx",
+                "args": ["blender-mcp"],
+                "transport": "stdio",
+            },
+        })
+        blender_tools = await blender_client.get_tools()
+        all_tools += blender_tools
+
+
+
+
+
+    logger.info(f"成功加载 {len(all_tools)} 个工具")
 
     checkpointer = await _get_checkpointer()
 
     system_prompt = """你是一个本地文档与3D建模助手。
 你可以读取本地Excel和Word文件并回答问题。
 你还可以通过 Blender 工具进行 3D 建模操作。
+你还可以通过进行联网搜索查找资料。
 当用户提供个人信息时，请自然地提及或确认。
 请始终用与用户输入相同的语言进行回复。
 """
