@@ -35,7 +35,7 @@ async def close_checkpointer():
         _checkpointer = None
 
 
-async def creat_agent(model_name: str):
+async def creat_agent(model_name: str,import_blender: bool = False):
     if model_name not in MODEL_CONFIGS:
         logger.info(f"Can't find the {model_name} model")
         return "error : do not found model"
@@ -59,18 +59,15 @@ async def creat_agent(model_name: str):
     })
     news_tools =  await news_client.get_tools()
 
+    news_tools = await news_client.get_tools()
     all_tools = [docx_read, excel_read] + news_tools
-    result =  await asyncio.to_thread(input, "是否导入 Blender 工具（按Y键导入）: ")
-    if result in "Yy":
-        blender_client = MultiServerMCPClient({
-            "blender": {
-                "command": "uvx",
-                "args": ["blender-mcp"],
-                "transport": "stdio",
-            },
-        })
+
+    # Blender 工具按需加载
+    if import_blender:
+        blender_client = MultiServerMCPClient({...})
         blender_tools = await blender_client.get_tools()
         all_tools += blender_tools
+        logger.info(f"已加载 {len(blender_tools)} 个 Blender 工具")
 
 
 
