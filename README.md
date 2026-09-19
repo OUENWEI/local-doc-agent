@@ -71,3 +71,28 @@ uv run python scripts/run_cli.py
 ### 可选：3D 建模
 
 需要额外安装 [Blender](https://www.blender.org/download/) 和 [MCP for Blender 插件](https://github.com/ahujasid/mcp-for-blender)。在 Blender 中启动 MCP 服务器（显示 `Connected on port 9876`），然后在 WebUI 中勾选「导入 Blender 工具」即可使用。
+
+## 📖 使用说明
+
+### 文件读取方式
+
+当前版本**仅支持通过输入文件路径来读取本地文件**，暂不支持在 WebUI 中直接上传文件。
+
+使用方式：在对话框中输入文件的完整路径，例如：
+
+```text
+帮我分析一下 C:\Users\pc\Desktop\学生成绩表.xlsx
+```
+
+或
+
+```text
+帮我读一下 /Users/pc/Documents/报告.docx
+```
+
+Agent 会自动识别文件类型（Word / Excel），读取内容并进行分析。
+
+> ⚠️ 注意：
+> - 文件必须位于本地磁盘，且路径正确。
+> - 暂不支持网络文件或云盘链接。
+> - 后续版本会加入文件上传功能，敬请期待。

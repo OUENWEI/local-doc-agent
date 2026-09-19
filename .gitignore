@@ -181,4 +181,10 @@ cython_debug/
 .cursorindexingignore
 logs/
 *.log
+# 数据库文件
+*.db
+*.db-shm
+*.db-wal
 short_memory.db
+agent_checkpoint.db
+agent_store.db
